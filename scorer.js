@@ -1,15 +1,32 @@
 import React from 'react';
 import { render } from 'react-dom';
+
 import Select from 'react-select';
-import { action, observable } from 'mobx';
+import 'react-select/dist/react-select.css';
+
+import { Button, Input } from 'wikipedia-react-components';
+
+import { action, computed, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
 
+
 // TODO: configurable
-const oresUri = "https://ores.wikimedia.org";
+// const oresUri = "https://ores.wikimedia.org";
+const oresUri = "http://localhost:5000";
 
 var appState = observable( {
-    wiki: "enwiki",
-    wikiModels: [],
+    wiki: null,
+    models: [],
+    revisions: [],
+
+    allModels: {},
+    wikis: [ "enwiki", "frwiki" ],
+    @computed get wikiModels() {
+        if ( appState.allModels === null || appState.wiki === null ) {
+            return [];
+        }
+        return Object.keys( appState.allModels[appState.wiki].models );
+    }
 } );
 //var urlModels = [];
 
@@ -30,18 +47,108 @@ function error( msg ) {
 */
 
 @observer
+class WikiChooser extends React.Component {
+    render() {
+        let value = this.props.appState.wiki || null;
+
+        let options = this.props.appState.wikis.map(
+            (key) => { return {
+                label: key,
+                value: key
+            } } );
+
+        return (
+            <div>
+                <h5>Select wiki</h5>
+                <Select
+                    onChange={ this.handleChange.bind(this) }
+                    value={ value }
+                    options={ options } />
+            </div>
+        );
+    }
+
+    @action
+    handleChange( selectedOption ) {
+        // FIXME: handle null better
+        if ( selectedOption === null ) {
+            this.props.appState.wiki = null;
+        }
+        this.props.appState.wiki = selectedOption.value;
+    }
+}
+
+// TODO: These must exist already.
+function optionsToArray( options ) {
+    return options.map( option => { return option.value } );
+}
+
+function arrayToOptions( values ) {
+    return values.map(
+        (key) => { return {
+            label: key,
+            value: key
+        } } );
+}
+
+@observer
 class ModelChooser extends React.Component {
     render() {
         if ( !this.props.appState.wikiModels.length ) {
             return null;
         }
 
+        let selectedOptions = arrayToOptions( this.props.appState.models );
+        let options = arrayToOptions( this.props.appState.wikiModels );
+
         return (
             <div>
-                <h5>Select models</h5>
-                <Select multi options={this.props.appState.wikiModels} />
+                <h5>Select models (optional)</h5>
+                <Select
+                    multi={ true }
+                    placeholder="All models"
+                    value={ selectedOptions }
+                    onChange={ this.handleChange.bind(this) }
+                    options={ options } />
             </div>
         );
+    }
+
+    handleChange( selectedOptions ) {
+        let options = optionsToArray( selectedOptions );
+        this.props.appState.models = options;
+    }
+}
+
+class RevisionChooser extends React.Component {
+    render() {
+        if ( !this.props.appState.wiki ) {
+            return null;
+        }
+
+        return (
+            <div>
+                <h5>Choose revision by ID</h5>
+                <Input
+                    textarea={ true } />
+            </div>
+        );
+    }
+}
+
+class SendButton extends React.Component {
+    render() {
+        // TODO: move to isInputValid
+        if (
+            !this.props.appState.wiki ||
+            !this.props.appState.models.length ||
+            !this.props.appState.revisions.length
+        ) {
+            return null;
+        }
+
+        return <Button
+            label="Give me results!" />;
     }
 }
 
@@ -156,19 +263,38 @@ if ( getParameterByName( 'wiki' ) && getParameterByName( 'revids' ) && getParame
 }
 */
 
-const loadModels = function() {
-    fetch( oresUri + '/v3/scores/' + appState.wiki + '/' )
+const loadWikisAndModels = function() {
+    const response = {
+        enwiki: {
+            models: {
+                damaging: { version: '0.4.0' },
+                goodfaith: { version: '0.4.0' },
+                wp10: { version: '0.4.0' },
+            }
+        }
+    };
+
+    appState.allModels = response;
+    appState.wikis = Object.keys( response );
+
+    /*
+    fetch( oresUri + '/v3/scores/' )
         .then( res => res.json() )
         .then( action( json => {
-            console.log(json);
-            appState.wikiModels = Object.keys( json[appState.wiki].models );
-            console.log(appState.wikiModels);
+            appState.allModels = json;
+            appState.wikis = Object.keys( json );
         } ) );
+    */
 };
 
 render(
-    <ModelChooser appState={appState} />,
+    <div>
+        <WikiChooser appState={appState} />
+        <ModelChooser appState={appState} />
+        <RevisionChooser appState={appState} />
+        <SendButton appState={appState} />
+    </div>,
     document.getElementById( 'root' )
 );
 
-loadModels()
+loadWikisAndModels();

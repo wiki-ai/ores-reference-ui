@@ -1,1 +1,1 @@
-import scorer from './scorer.js';
+import scorer from './scorer.jsx';

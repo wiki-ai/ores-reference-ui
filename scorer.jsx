@@ -5,30 +5,55 @@ import Select from 'react-select';
 import 'react-select/dist/react-select.css';
 
 import { Button, Input } from 'wikipedia-react-components';
+import 'wikipedia-react-components/dist/styles.css'
 
-import { action, computed, observable, toJS } from 'mobx';
+import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
 
 
 // TODO: configurable
-// const oresUri = "https://ores.wikimedia.org";
-const oresUri = "http://localhost:5000";
+const oresUri = "https://ores.wikimedia.org";
+// const oresUri = "http://localhost:5000";
 
 var appState = observable( {
+    // Current UI input values.
     wiki: null,
     models: [],
     revisions: [],
 
+    // Capabilities of this ORES installation.
     allModels: {},
-    wikis: [ "enwiki", "frwiki" ],
-    @computed get wikiModels() {
-        if ( appState.allModels === null || appState.wiki === null ) {
+    wikis: [],
+    get wikiModels() {
+        if (
+            !appState.allModels
+            || !appState.wiki
+            || !appState.allModels[appState.wiki]
+        ) {
             return [];
         }
         return Object.keys( appState.allModels[appState.wiki].models );
-    }
+    },
+
+    // ORES request and results.
+    scoringRequest: null,
+    scoringResponse: null,
 } );
-//var urlModels = [];
+
+// TODO: These must already be a thing?
+class OptionsHelper {
+    static toArray( options ) {
+        return options.map( option => { return option.value } );
+    }
+
+    static fromArray( values ) {
+        return values.map(
+            (key) => { return {
+                label: key,
+                value: key
+            } } );
+    }
+}
 
 /*
 function getParameterByName( name ) {
@@ -50,12 +75,7 @@ function error( msg ) {
 class WikiChooser extends React.Component {
     render() {
         let value = this.props.appState.wiki || null;
-
-        let options = this.props.appState.wikis.map(
-            (key) => { return {
-                label: key,
-                value: key
-            } } );
+        let options = OptionsHelper.fromArray( toJS( this.props.appState.wikis ) );
 
         return (
             <div>
@@ -78,19 +98,6 @@ class WikiChooser extends React.Component {
     }
 }
 
-// TODO: These must exist already.
-function optionsToArray( options ) {
-    return options.map( option => { return option.value } );
-}
-
-function arrayToOptions( values ) {
-    return values.map(
-        (key) => { return {
-            label: key,
-            value: key
-        } } );
-}
-
 @observer
 class ModelChooser extends React.Component {
     render() {
@@ -98,8 +105,8 @@ class ModelChooser extends React.Component {
             return null;
         }
 
-        let selectedOptions = arrayToOptions( this.props.appState.models );
-        let options = arrayToOptions( this.props.appState.wikiModels );
+        let selectedOptions = OptionsHelper.fromArray( this.props.appState.models );
+        let options = OptionsHelper.fromArray( this.props.appState.wikiModels );
 
         return (
             <div>
@@ -114,61 +121,121 @@ class ModelChooser extends React.Component {
         );
     }
 
+    @action
     handleChange( selectedOptions ) {
-        let options = optionsToArray( selectedOptions );
+        let options = OptionsHelper.toArray( selectedOptions );
         this.props.appState.models = options;
     }
 }
 
+@observer
 class RevisionChooser extends React.Component {
     render() {
         if ( !this.props.appState.wiki ) {
             return null;
         }
 
+        // TODO: join with newline
+        let revisions = this.props.appState.revisions;
+
+        // TODO: current recommendation seems to be s/onInput/onChange/
+
         return (
             <div>
-                <h5>Choose revision by ID</h5>
+                <h5>Choose revision(s) by ID (separated by a newline)</h5>
                 <Input
+                    onInput={ this.handleChange.bind(this) }
+                    value={ revisions }
                     textarea={ true } />
             </div>
         );
     }
+
+    @action
+    handleChange(event) {
+        let value = event.target.value;
+        // TODO: split on comma and space as well.
+        let revisions = value.split( "\n" );
+        this.props.appState.revisions = revisions;
+    }
 }
 
+@observer
 class SendButton extends React.Component {
     render() {
         // TODO: move to isInputValid
         if (
-            !this.props.appState.wiki ||
-            !this.props.appState.models.length ||
-            !this.props.appState.revisions.length
+            this.props.appState.wiki === null
+            || this.props.appState.revisions.length === 0
         ) {
             return null;
         }
 
         return <Button
+            onClick={ this.handleClick.bind(this) }
             label="Give me results!" />;
+    }
+
+    @action
+    handleClick() {
+        let selectedModels = toJS( this.props.appState.models );
+        if ( selectedModels.length === 0 ) {
+            selectedModels = this.props.appState.wikiModels;
+        }
+        let modelString = selectedModels.join("|");
+
+        let revisionString = this.props.appState.revisions.join("|");
+
+        this.props.appState.scoringRequest = oresUri + "/v3/scores/"
+            + this.props.appState.wiki + "/?models=" + modelString + "&revids=" + revisionString;
+
+        fetch( this.props.appState.scoringRequest )
+            .then( res => res.json() )
+            .then( action( json => {
+                this.props.appState.scoringResponse = json;
+            } ) );
+    }
+}
+
+@observer
+class RawRequest extends React.Component {
+    render() {
+        let url = this.props.appState.scoringRequest;
+
+        if ( !url ) {
+            return null;
+        }
+
+        return (
+            <div>
+                Scoring request: <a href={ url }>{ url }</a>
+            </div>
+        );
+    }
+}
+
+@observer
+class RawResults extends React.Component {
+    render() {
+        if ( !this.props.appState.scoringResponse ) {
+            return null;
+        }
+
+        let json = JSON.stringify( toJS( this.props.appState.scoringResponse ), null, 4 );
+
+        return (
+            <div>
+                Raw results:
+                <pre>
+                    { json }
+                </pre>
+            </div>
+        );
     }
 }
 
 /*
-function wikis() {
-	$.get( '/scores/', function ( data ) {
-		var wikis = data.contexts, i = 0;
-		for ( i = 0; i < wikis.length; i++ ) {
-			$( '#wikis' ).append( '<li><a>' + wikis[ i ] + '</a></li>' );
-		}
-		$( '#wikiDropDownInput' ).removeAttr( 'disabled' );
-		// $( '#wikisList li > a' ).click( function () {
-			// loadModels( this.innerHTML );
-		// } );
-	} );
-}
 
-function enableResult() {
-	$( '#resultButton' ).removeAttr( 'disabled' );
-}
 function createTable( data ) {
 	var htm = '', i = 0, j = 0, k = 0, revids = [], outcomes = [], models = [];
 
@@ -195,45 +262,6 @@ function createTable( data ) {
 	htm += '</tbody></table>';
 	return htm;
 }
-
-function getResults() {
-	var revs = $( '#revIds' ).val().replace( ',', '|' ), modelsUrl = '', url = '', container = '<div id="tableContainer" class="col-md-6 col-md-offset-3" style="margin-top: 3em; margin-bottom: 3em;">';
-
-	var selectedModels = $( 'input:checked' );
-	if ( selectedModels.length === 0 ) {
-		selectedModels = $( ':checkbox' );
-	}
-	selectedModels.each( function () {
-		modelsUrl += $( this ).val() + '|';
-	} );
-
-	modelsUrl = modelsUrl.slice( 0, -1 );
-	url = '/scores/' + $( '#wikiDropDownInput' ).attr( 'value' ) + '/?models=' + modelsUrl + '&revids=' + revs;
-
-	// Display the API we'll be using.
-	var absoluteUrl = window.location.href + url;
-	$( '#api-url' ).html( "Raw: <a href=\"" + url + "\">" + absoluteUrl + "</a>" );
-
-	// Get the results.
-	$.get( { url: url, datatype: 'jsonp' } ).always( function ( data ) {
-		$( '#tableContainer' ).remove();
-		$( '#afterThis' ).after( container + createTable( data ) + '</div>' );
-		$( '.sortable.table' ).tablesorter();
-	} );
-}
-
-wikis();
-$( '#revIds' ).click( function () {
-	enableResult();
-} );
-$( '#resultButton' ).click( function () {
-	getResults();
-} );
-// if ( getParameterByName( 'wiki' ) ) {
-// 	$( function () {
-// 		loadModels( getParameterByName( 'wiki' ) );
-// 	} );
-// }
 
 if ( getParameterByName( 'revids' ) ) {
 	$( function () {
@@ -264,27 +292,12 @@ if ( getParameterByName( 'wiki' ) && getParameterByName( 'revids' ) && getParame
 */
 
 const loadWikisAndModels = function() {
-    const response = {
-        enwiki: {
-            models: {
-                damaging: { version: '0.4.0' },
-                goodfaith: { version: '0.4.0' },
-                wp10: { version: '0.4.0' },
-            }
-        }
-    };
-
-    appState.allModels = response;
-    appState.wikis = Object.keys( response );
-
-    /*
-    fetch( oresUri + '/v3/scores/' )
+    fetch( oresUri + "/v3/scores/" )
         .then( res => res.json() )
         .then( action( json => {
             appState.allModels = json;
             appState.wikis = Object.keys( json );
         } ) );
-    */
 };
 
 render(
@@ -293,6 +306,8 @@ render(
         <ModelChooser appState={appState} />
         <RevisionChooser appState={appState} />
         <SendButton appState={appState} />
+        <RawRequest appState={appState} />
+        <RawResults appState={appState} />
     </div>,
     document.getElementById( 'root' )
 );

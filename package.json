@@ -17,7 +17,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "dev": "parcel serve index.html"
+    "dev": "parcel serve index.html",
+    "build": "parcel build index.html --no-cache --out-dir dist/ --public-url ./"
   },
   "contributors": [
     "Adam Roses Wight <awight@wikimedia.org"

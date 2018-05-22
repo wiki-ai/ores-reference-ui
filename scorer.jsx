@@ -12,8 +12,9 @@ import 'rc-collapse/assets/index.css';
 import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
 
-import ThresholdGraph from './threshold_graph.jsx';
 import OptionsHelper from './options_helper.jsx';
+import PredictionGraph from './prediction_graph.jsx';
+import ThresholdGraph from './threshold_graph.jsx';
 
 // TODO: configurable
 const oresUri = 'https://ores.wikimedia.org';
@@ -226,7 +227,7 @@ class RevisionChooser extends React.Component {
 	handleChange( event ) {
 		let value = event.target.value,
 			// TODO: split on comma and space as well.
-			revisions = value.split( '\n' );
+			revisions = value.trim().split( '\n' );
 		this.props.appState.revisions = revisions;
 	}
 }
@@ -312,13 +313,11 @@ class RenderedResults extends React.Component {
 			return null;
 		}
 
-		let models = this.props.appState.scoringResponse[ this.props.appState.wiki ].models;
-
-		// TODO: does forEach map?  How to more elegantly iterate objects?
-
-		return (
-			<div>
-				{ Object.keys( toJS( models ) ).filter( model => {
+		let wikiResponse = this.props.appState.scoringResponse[ this.props.appState.wiki ],
+			scoresResponse = wikiResponse.scores,
+			models = wikiResponse.models,
+			thresholdGraphs = Object.keys( toJS( models ) )
+				.filter( model => {
 					return Boolean( models[ model ].statistics ) &&
 						Boolean( models[ model ].statistics.thresholds );
 				} ).map( model => {
@@ -335,7 +334,31 @@ class RenderedResults extends React.Component {
 							/>
 						);
 					} );
-				} ) }
+				} ),
+			scoreGraphs = null;
+
+		if ( scoresResponse ) {
+			scoreGraphs = Object.keys( scoresResponse ).map( rev_id => {
+				return Object.keys( scoresResponse[ rev_id ] ).map( model => {
+					return (
+						<PredictionGraph
+							key={ model + '-' + rev_id }
+							wiki={ this.props.appState.wiki }
+							model={ model }
+							rev_id={ rev_id }
+							score={ toJS( scoresResponse[ rev_id ][ model ].score ) }
+						/>
+					);
+				} );
+			} );
+		}
+
+		// TODO: does forEach map?  How to more elegantly iterate objects?
+
+		return (
+			<div>
+				{ scoreGraphs }
+				{ thresholdGraphs }
 			</div>
 		);
 	}

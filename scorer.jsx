@@ -1,15 +1,19 @@
 import React from 'react';
 import { render } from 'react-dom';
+
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
-import { Button, Checkbox, Collapsible, Input } from 'wikipedia-react-components';
+import { Button, Checkbox, Input } from 'wikipedia-react-components';
 import 'wikipedia-react-components/dist/styles.css';
-import { action, observable, toJS } from 'mobx';
-import { observer } from 'mobx-react';
-import Chart from 'chart.js';
 import { RingLoader } from 'react-spinners';
 import Collapse, { Panel } from 'rc-collapse';
 import 'rc-collapse/assets/index.css';
+
+import { action, observable, toJS } from 'mobx';
+import { observer } from 'mobx-react';
+
+import ThresholdGraph from './threshold_graph.jsx';
+import OptionsHelper from './options_helper.jsx';
 
 // TODO: configurable
 const oresUri = 'https://ores.wikimedia.org';
@@ -96,23 +100,6 @@ class OresApi {
 				appState.scoringResponse = json;
 				appState.loading = false;
 			} ) );
-	}
-}
-
-// TODO: These must already be a thing?
-class OptionsHelper {
-	static toArray( options ) {
-		return options.map( option => { return option.value; } );
-	}
-
-	static fromArray( values ) {
-		return values.map(
-			( key ) => {
-				return {
-					label: key,
-					value: key
-				};
-			} );
 	}
 }
 
@@ -350,78 +337,6 @@ class RenderedResults extends React.Component {
 					} );
 				} ) }
 			</div>
-		);
-	}
-}
-
-class ThresholdGraph extends React.Component {
-	componentDidMount() {
-		let chartCanvas = this.refs.chart,
-			data = {
-				datasets: [
-					{
-						label: 'Precision',
-						data: this.props.thresholds.map( level => {
-							return { x: level.threshold, y: level.precision };
-						} ),
-						borderColor: 'rgba( 0, 204, 255, 1 )',
-						pointRadius: 0
-					},
-					{
-						label: 'Recall',
-						data: this.props.thresholds.map( level => {
-							return { x: level.threshold, y: level.recall };
-						} ),
-						borderColor: 'rgba( 134, 153, 77, 1 )',
-						pointRadius: 0
-					},
-					{
-						label: 'Filter rate',
-						data: this.props.thresholds.map( level => {
-							return { x: level.threshold, y: level.filter_rate };
-						} ),
-						borderColor: 'rgba( 0, 0, 0, 1 )',
-						pointRadius: 0
-					}
-				]
-			};
-
-		/* eslint-disable no-new */
-		new Chart( chartCanvas, {
-			type: 'line',
-			data: data,
-			options: {
-				title: {
-					display: true,
-					text: 'Precision-recall for ' + this.props.wiki + ' ' + this.props.model + ' "' + this.props.target + '" prediction'
-				},
-				elements: {
-					line: {
-						tension: 0, // disables bezier curves
-						fill: false
-					}
-				},
-				scales: {
-					xAxes: [ {
-						scaleLabel: {
-							display: true,
-							labelString: 'Cutoff threshold'
-						},
-						type: 'linear',
-						position: 'bottom'
-					} ]
-				}
-			}
-		} );
-	}
-
-	render() {
-		if ( !this.props.thresholds ) {
-			return null;
-		}
-
-		return (
-			<canvas ref={ 'chart' } height="400" width="600"></canvas>
 		);
 	}
 }

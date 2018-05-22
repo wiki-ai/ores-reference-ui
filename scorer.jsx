@@ -2,12 +2,14 @@ import React from 'react';
 import { render } from 'react-dom';
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
-import { Button, Checkbox, Input } from 'wikipedia-react-components';
+import { Button, Checkbox, Collapsible, Input } from 'wikipedia-react-components';
 import 'wikipedia-react-components/dist/styles.css';
 import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
 import Chart from 'chart.js';
 import { RingLoader } from 'react-spinners';
+import Collapse, { Panel } from 'rc-collapse';
+import 'rc-collapse/assets/index.css';
 
 // TODO: configurable
 const oresUri = 'https://ores.wikimedia.org';
@@ -300,12 +302,13 @@ class RawResults extends React.Component {
 		let json = JSON.stringify( toJS( this.props.appState.scoringResponse ), null, 4 );
 
 		return (
-			<div>
-				<h5>Raw results</h5>
-				<pre>
-					{ json }
-				</pre>
-			</div>
+			<Collapse accordion={ true }>
+				<Panel header="Raw results" key="0">
+					<pre>
+						{ json }
+					</pre>
+				</Panel>
+			</Collapse>
 		);
 	}
 }
@@ -431,8 +434,8 @@ render(
 		<ModelInfoChooser appState={appState} />
 		<SendButton appState={appState} />
 		<RawRequest appState={appState} />
-		<RenderedResults appState={appState} />
 		<RawResults appState={appState} />
+		<RenderedResults appState={appState} />
 	</div>,
 	document.getElementById( 'root' )
 );

@@ -53,22 +53,6 @@ class OptionsHelper {
 	}
 }
 
-/*
-function getParameterByName( name ) {
-	var regex = null, results = null;
-
-	name = name.replace( /[[]/, '\\[' ).replace( /[\]]/, '\\]' );
-	regex = new RegExp( '[\\?&]' + name + '=([^&#]*)' );
-	results = regex.exec( location.search );
-	return results === null ? '' : decodeURIComponent( results[ 1 ].replace( /\+/g, ' ' ) );
-}
-
-function error( msg ) {
-	var htm = '<div class="alert alert-danger" style="padding-top: 15px"><div class="header">We\'re sorry. ORES returned the following error:</div><p>' + msg + '</p></div>';
-	return htm;
-}
-*/
-
 @observer
 class WikiChooser extends React.Component {
 	render() {
@@ -234,71 +218,6 @@ class RawResults extends React.Component {
 	}
 }
 
-/*
-
-function createTable( data ) {
-	var htm = '', i = 0, j = 0, k = 0, revids = [], outcomes = [], models = [];
-
-	htm = '<table class="celled table sortable"><thead><tr><th>Wiki</th><th>Model</th><th>Revision ID</th><th>Value</th><th>Score</th></tr></thead>';
-	revids = Object.keys( data );
-	if ( data.responseJSON && data.responseJSON.error ) {
-		return error( data.responseJSON.error.message );
-	}
-	for ( i = 0; i < revids.length; i++ ) {
-		if ( data[ revids[ i ] ].error ) {
-			return error( data[ revids[ i ] ].error.message );
-		}
-		models = Object.keys( data[ revids[ i ] ] );
-		for ( j = 0; j < models.length; j++ ) {
-			if ( data[ revids[ i ] ][ models[ j ] ].error ) {
-				return error( data[ revids[ i ] ][ models[ j ] ].error.message );
-			}
-			outcomes = Object.keys( data[ revids[ i ] ][ models[ j ] ].probability );
-			for ( k = 0; k < outcomes.length; k++ ) {
-				htm += '<tr><td>' + $( '#wikiDropDownInput' ).attr( 'value' ) + '</td><td>' + models[ j ] + '</td><td>' + revids[ i ] + '</td><td>' + outcomes[ k ] + '</td><td>' + data[ revids[ i ] ][ models[ j ] ].probability[ outcomes[ k ] ] + '</td></tr>';
-			}
-		}
-	}
-	htm += '</tbody></table>';
-	return htm;
-}
-
-if ( getParameterByName( 'revids' ) ) {
-	$( function () {
-		setTimeout( function () {
-			$( '#revIds' ).val( getParameterByName( 'revids' ).replace( '|', ',' ) );
-		}, 3000 );
-	} );
-}
-
-if ( getParameterByName( 'models' ) ) {
-	urlModels = getParameterByName( 'models' ).split( '|' );
-	$( function () {
-		setTimeout( function () {
-			var i = 0;
-			for ( i = 0; i < urlModels.length; i++ ) {
-				$( ':input[value="' + urlModels[ i ] + '"]' ).prop( 'checked', true );
-			}
-		}, 3000 );
-	} );
-}
-
-if ( getParameterByName( 'wiki' ) && getParameterByName( 'revids' ) && getParameterByName( 'models' ) ) {
-	if ( getParameterByName( 'go' ) ) {
-		$( function () { setTimeout( function () { getResults(); }, 3000 ); } );
-	}
-	$( function () { setTimeout( function () { enableResult(); }, 3000 ); } );
-}
-*/
-
-function loadWikisAndModels() {
-	fetch( oresUri + '/v3/scores/' )
-		.then( res => res.json() )
-		.then( action( json => {
-			appState.allModels = json;
-			appState.wikis = Object.keys( json );
-		} ) );
-}
 
 render(
 	<div>

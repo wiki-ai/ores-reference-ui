@@ -185,13 +185,14 @@ class ModelInfoChooser extends React.Component {
 
 		return (
 			<div>
+				<h5>Model info</h5>
 				<Checkbox
-					label="Include model info"
+					label="Include basic model statistics"
 					checked={ this.props.appState.includeModelInfo }
 					onToggle={ this.handleToggleModelInfo.bind( this ) }
 				/><br />
 				<Checkbox
-					label="Include threshold info"
+					label="Graph threshold statistics"
 					checked={ this.props.appState.includeThresholdInfo }
 					onToggle={ this.handleToggleThresholdInfo.bind( this ) }
 				/>

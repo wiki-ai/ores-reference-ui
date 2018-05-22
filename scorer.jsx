@@ -7,6 +7,7 @@ import 'wikipedia-react-components/dist/styles.css';
 import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
 import Chart from 'chart.js';
+import { RingLoader } from 'react-spinners';
 
 // TODO: configurable
 const oresUri = 'https://ores.wikimedia.org';
@@ -36,7 +37,8 @@ var appState = observable( {
 
 	// ORES request and results.
 	scoringRequest: null,
-	scoringResponse: null
+	scoringResponse: null,
+	loading: false
 } );
 
 class OresApi {
@@ -84,11 +86,13 @@ class OresApi {
 		// TODO: "|" gets url-encoded but it would be clearer if we didn't.
 		url.search = params;
 		appState.scoringRequest = url.toString();
+		appState.loading = true;
 
 		fetch( appState.scoringRequest )
 			.then( res => res.json() )
 			.then( action( json => {
 				appState.scoringResponse = json;
+				appState.loading = false;
 			} ) );
 	}
 }
@@ -254,6 +258,9 @@ class SendButton extends React.Component {
 				<Button
 					onClick={ this.handleClick.bind( this ) }
 					label="Give me results!"
+				/>
+				<RingLoader
+					loading={this.props.appState.loading}
 				/>
 			</div>
 		);

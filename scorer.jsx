@@ -6,6 +6,7 @@ import { Button, Checkbox, Input } from 'wikipedia-react-components';
 import 'wikipedia-react-components/dist/styles.css';
 import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
+import Chart from 'chart.js';
 
 // TODO: configurable
 const oresUri = 'https://ores.wikimedia.org';
@@ -121,7 +122,8 @@ class WikiChooser extends React.Component {
 				<Select
 					onChange={ this.handleChange.bind( this ) }
 					value={ value }
-					options={ options } />
+					options={ options }
+				/>
 			</div>
 		);
 	}
@@ -154,7 +156,8 @@ class ModelChooser extends React.Component {
 					placeholder="All models"
 					value={ selectedOptions }
 					onChange={ this.handleChange.bind( this ) }
-					options={ options } />
+					options={ options }
+				/>
 			</div>
 		);
 	}
@@ -178,11 +181,13 @@ class ModelInfoChooser extends React.Component {
 				<Checkbox
 					label="Include model info"
 					checked={ this.props.appState.includeModelInfo }
-					onToggle={ this.handleToggleModelInfo.bind( this ) } /><br />
+					onToggle={ this.handleToggleModelInfo.bind( this ) }
+				/><br />
 				<Checkbox
 					label="Include threshold info"
 					checked={ this.props.appState.includeThresholdInfo }
-					onToggle={ this.handleToggleThresholdInfo.bind( this ) } />
+					onToggle={ this.handleToggleThresholdInfo.bind( this ) }
+				/>
 			</div>
 		);
 	}
@@ -216,7 +221,8 @@ class RevisionChooser extends React.Component {
 				<Input
 					onInput={ this.handleChange.bind( this ) }
 					value={ revisions }
-					textarea={ true } />
+					textarea={ true }
+				/>
 			</div>
 		);
 	}
@@ -247,7 +253,8 @@ class SendButton extends React.Component {
 			<div>
 				<Button
 					onClick={ this.handleClick.bind( this ) }
-					label="Give me results!" />
+					label="Give me results!"
+				/>
 			</div>
 		);
 	}
@@ -296,6 +303,112 @@ class RawResults extends React.Component {
 	}
 }
 
+@observer
+class RenderedResults extends React.Component {
+	render() {
+		if ( !this.props.appState.scoringResponse ) {
+			return null;
+		}
+
+		let models = this.props.appState.scoringResponse[ this.props.appState.wiki ].models;
+
+		// TODO: does forEach map?  How to more elegantly iterate objects?
+
+		return (
+			<div>
+				{ Object.keys( toJS( models ) ).filter( model => {
+					return Boolean( models[ model ].statistics ) &&
+						Boolean( models[ model ].statistics.thresholds );
+				} ).map( model => {
+					let thresholds = models[ model ].statistics.thresholds;
+
+					return Object.keys( thresholds ).map( target => {
+						return (
+							<ThresholdGraph
+								key={ model + '-' + target }
+								wiki={ this.props.appState.wiki }
+								model={ model }
+								thresholds={ thresholds[ target ] }
+								target={ target }
+							/>
+						);
+					} );
+				} ) }
+			</div>
+		);
+	}
+}
+
+class ThresholdGraph extends React.Component {
+	componentDidMount() {
+		let chartCanvas = this.refs.chart,
+			data = {
+				datasets: [
+					{
+						label: 'Precision',
+						data: this.props.thresholds.map( level => {
+							return { x: level.threshold, y: level.precision };
+						} ),
+						borderColor: 'rgba( 0, 204, 255, 1 )'
+					},
+					{
+						label: 'Recall',
+						data: this.props.thresholds.map( level => {
+							return { x: level.threshold, y: level.recall };
+						} ),
+						borderColor: 'rgba( 134, 153, 77, 1 )'
+					},
+					{
+						label: 'Filter rate',
+						data: this.props.thresholds.map( level => {
+							return { x: level.threshold, y: level.filter_rate };
+						} ),
+						borderColor: 'rgba( 0, 0, 0, 1 )'
+					}
+				]
+			};
+
+		/* eslint-disable no-new */
+		new Chart( chartCanvas, {
+			type: 'line',
+			data: data,
+			options: {
+				title: {
+					display: true,
+					text: 'Precision-recall for ' + this.props.wiki + ' ' + this.props.model + ' "' + this.props.target + '" prediction'
+				},
+				elements: {
+					line: {
+						tension: 0, // disables bezier curves
+						fill: false,
+						pointRadius: 0
+					}
+				},
+				scales: {
+					xAxes: [ {
+						scaleLabel: {
+							display: true,
+							labelString: 'Cutoff threshold'
+						},
+						type: 'linear',
+						position: 'bottom'
+					} ]
+				}
+			}
+		} );
+	}
+
+	render() {
+		if ( !this.props.thresholds ) {
+			return null;
+		}
+
+		return (
+			<canvas ref={ 'chart' } height="400" width="600"></canvas>
+		);
+	}
+}
+
 OresApi.loadWikisAndModels();
 
 render(
@@ -306,6 +419,7 @@ render(
 		<ModelInfoChooser appState={appState} />
 		<SendButton appState={appState} />
 		<RawRequest appState={appState} />
+		<RenderedResults appState={appState} />
 		<RawResults appState={appState} />
 	</div>,
 	document.getElementById( 'root' )

@@ -16,7 +16,7 @@
     "wikipedia-react-components": "^1.6.8"
   },
   "scripts": {
-    "dev": "parcel serve index.html",
+    "dev": "parcel serve index.html --out-dir /tmp",
     "build": "parcel build index.html --no-cache --out-dir dist/ --public-url ./",
     "lint": "eslint '*.js[x]'",
     "fixlint": "eslint '*.js[x]' --fix"

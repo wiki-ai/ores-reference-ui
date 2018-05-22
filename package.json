@@ -13,12 +13,13 @@
     "react": "^16.3.2",
     "react-dom": "^16.3.2",
     "react-select": "^1.2.1",
-    "wikipedia-react-components": "^1.5.6"
+    "wikipedia-react-components": "^1.6.8"
   },
-  "devDependencies": {},
   "scripts": {
     "dev": "parcel serve index.html",
-    "build": "parcel build index.html --no-cache --out-dir dist/ --public-url ./"
+    "build": "parcel build index.html --no-cache --out-dir dist/ --public-url ./",
+    "lint": "eslint '*.js[x]'",
+    "fixlint": "eslint '*.js[x]' --fix"
   },
   "contributors": [
     "Adam Roses Wight <awight@wikimedia.org"
@@ -27,5 +28,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/adamwight/ores-reference-ui.git"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.3",
+    "eslint": "^4.19.1",
+    "eslint-config-standard-jsx": "^5.0.0",
+    "eslint-config-wikimedia": "^0.5.0",
+    "eslint-plugin-react": "^7.8.2"
   }
 }

@@ -139,8 +139,9 @@ class WikiChooser extends React.Component {
 		// FIXME: handle null better
 		if ( selectedOption === null ) {
 			this.props.appState.wiki = null;
+		} else {
+			this.props.appState.wiki = selectedOption.value;
 		}
-		this.props.appState.wiki = selectedOption.value;
 	}
 }
 

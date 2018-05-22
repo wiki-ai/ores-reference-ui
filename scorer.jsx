@@ -340,6 +340,9 @@ class RenderedResults extends React.Component {
 		if ( scoresResponse ) {
 			scoreGraphs = Object.keys( scoresResponse ).map( rev_id => {
 				return Object.keys( scoresResponse[ rev_id ] ).map( model => {
+					if ( scoresResponse[ rev_id ][ model ].error ) {
+						return <p>{ scoresResponse[ rev_id ][ model ].error.message }</p>;
+					}
 					return (
 						<PredictionGraph
 							key={ model + '-' + rev_id }

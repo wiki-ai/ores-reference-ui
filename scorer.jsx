@@ -210,7 +210,8 @@ class RawRequest extends React.Component {
 
 		return (
 			<div>
-				Scoring request: <a href={ url }>{ url }</a>
+				<h5>Scoring request</h5>
+				<a href={ url }>{ url }</a>
 			</div>
 		);
 	}
@@ -227,7 +228,7 @@ class RawResults extends React.Component {
 
 		return (
 			<div>
-				Raw results:
+				<h5>Raw results</h5>
 				<pre>
 					{ json }
 				</pre>

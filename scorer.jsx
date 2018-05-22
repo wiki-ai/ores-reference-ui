@@ -306,7 +306,10 @@ class RawResults extends React.Component {
 @observer
 class RenderedResults extends React.Component {
 	render() {
-		if ( !this.props.appState.scoringResponse ) {
+		if (
+			!this.props.appState.scoringResponse ||
+			!this.props.appState.scoringResponse[ this.props.appState.wiki ]
+		) {
 			return null;
 		}
 
@@ -349,21 +352,24 @@ class ThresholdGraph extends React.Component {
 						data: this.props.thresholds.map( level => {
 							return { x: level.threshold, y: level.precision };
 						} ),
-						borderColor: 'rgba( 0, 204, 255, 1 )'
+						borderColor: 'rgba( 0, 204, 255, 1 )',
+						pointRadius: 0
 					},
 					{
 						label: 'Recall',
 						data: this.props.thresholds.map( level => {
 							return { x: level.threshold, y: level.recall };
 						} ),
-						borderColor: 'rgba( 134, 153, 77, 1 )'
+						borderColor: 'rgba( 134, 153, 77, 1 )',
+						pointRadius: 0
 					},
 					{
 						label: 'Filter rate',
 						data: this.props.thresholds.map( level => {
 							return { x: level.threshold, y: level.filter_rate };
 						} ),
-						borderColor: 'rgba( 0, 0, 0, 1 )'
+						borderColor: 'rgba( 0, 0, 0, 1 )',
+						pointRadius: 0
 					}
 				]
 			};
@@ -380,8 +386,7 @@ class ThresholdGraph extends React.Component {
 				elements: {
 					line: {
 						tension: 0, // disables bezier curves
-						fill: false,
-						pointRadius: 0
+						fill: false
 					}
 				},
 				scales: {

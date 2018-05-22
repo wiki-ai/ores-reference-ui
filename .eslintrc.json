@@ -6,7 +6,9 @@
   "globals": {
 	"document": true,
     "fetch": true,
-    "module": false
+    "module": false,
+    "URL": true,
+    "URLSearchParams": true
   },
   "parser": "babel-eslint",
   "parserOptions": {

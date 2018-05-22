@@ -50,18 +50,22 @@ class OresApi {
 
 	@action
 	static requestScores() {
-		let selectedModels = toJS( appState.models ),
+		let url = new URL( oresUri + '/v3/scores/' + appState.wiki + '/' ),
+			params = new URLSearchParams(),
 			modelString,
 			revisionString;
 
-		if ( selectedModels.length === 0 ) {
-			selectedModels = appState.wikiModels;
+		if ( appState.models.length > 0 ) {
+			modelString = appState.models.join( '|' );
+			params.append( 'models', modelString );
 		}
-		modelString = selectedModels.join( '|' );
 		revisionString = appState.revisions.join( '|' );
+		params.append( 'revids', revisionString );
 
-		appState.scoringRequest = oresUri + '/v3/scores/' +
-			appState.wiki + '/?models=' + modelString + '&revids=' + revisionString;
+		url.search = params;
+
+		// TODO: "|" gets url-encoded but it would be clearer if we didn't.
+		appState.scoringRequest = url.toString();
 
 		fetch( appState.scoringRequest )
 			.then( res => res.json() )

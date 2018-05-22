@@ -23,8 +23,8 @@ var appState = observable( {
 	get wikiModels() {
 		if (
 			!appState.allModels ||
-            !appState.wiki ||
-            !appState.allModels[ appState.wiki ]
+			!appState.wiki ||
+			!appState.allModels[ appState.wiki ]
 		) {
 			return [];
 		}
@@ -35,6 +35,41 @@ var appState = observable( {
 	scoringRequest: null,
 	scoringResponse: null
 } );
+
+class OresApi {
+	// TODO: decouple from appState
+
+	static loadWikisAndModels() {
+		fetch( oresUri + '/v3/scores/' )
+			.then( res => res.json() )
+			.then( action( json => {
+				appState.allModels = json;
+				appState.wikis = Object.keys( json );
+			} ) );
+	}
+
+	@action
+	static requestScores() {
+		let selectedModels = toJS( appState.models ),
+			modelString,
+			revisionString;
+
+		if ( selectedModels.length === 0 ) {
+			selectedModels = appState.wikiModels;
+		}
+		modelString = selectedModels.join( '|' );
+		revisionString = appState.revisions.join( '|' );
+
+		appState.scoringRequest = oresUri + '/v3/scores/' +
+			appState.wiki + '/?models=' + modelString + '&revids=' + revisionString;
+
+		fetch( appState.scoringRequest )
+			.then( res => res.json() )
+			.then( action( json => {
+				appState.scoringResponse = json;
+			} ) );
+	}
+}
 
 // TODO: These must already be a thing?
 class OptionsHelper {
@@ -160,24 +195,7 @@ class SendButton extends React.Component {
 
 	@action
 	handleClick() {
-		let selectedModels = toJS( this.props.appState.models ),
-			modelString,
-			revisionString;
-
-		if ( selectedModels.length === 0 ) {
-			selectedModels = this.props.appState.wikiModels;
-		}
-		modelString = selectedModels.join( '|' );
-		revisionString = this.props.appState.revisions.join( '|' );
-
-		this.props.appState.scoringRequest = oresUri + '/v3/scores/' +
-			this.props.appState.wiki + '/?models=' + modelString + '&revids=' + revisionString;
-
-		fetch( this.props.appState.scoringRequest )
-			.then( res => res.json() )
-			.then( action( json => {
-				this.props.appState.scoringResponse = json;
-			} ) );
+		OresApi.requestScores();
 	}
 }
 
@@ -218,6 +236,7 @@ class RawResults extends React.Component {
 	}
 }
 
+OresApi.loadWikisAndModels();
 
 render(
 	<div>
@@ -230,5 +249,3 @@ render(
 	</div>,
 	document.getElementById( 'root' )
 );
-
-loadWikisAndModels();

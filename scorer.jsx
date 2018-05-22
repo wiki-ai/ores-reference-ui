@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from 'react-dom';
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
-import { Button, Input } from 'wikipedia-react-components';
+import { Button, Checkbox, Input } from 'wikipedia-react-components';
 import 'wikipedia-react-components/dist/styles.css';
 import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
@@ -16,6 +16,8 @@ var appState = observable( {
 	wiki: null,
 	models: [],
 	revisions: [],
+	includeModelInfo: false,
+	includeThresholdInfo: false,
 
 	// Capabilities of this ORES installation.
 	allModels: {},
@@ -52,6 +54,7 @@ class OresApi {
 	static requestScores() {
 		let url = new URL( oresUri + '/v3/scores/' + appState.wiki + '/' ),
 			params = new URLSearchParams(),
+			modelInfo = [],
 			modelString,
 			revisionString;
 
@@ -59,12 +62,26 @@ class OresApi {
 			modelString = appState.models.join( '|' );
 			params.append( 'models', modelString );
 		}
-		revisionString = appState.revisions.join( '|' );
-		params.append( 'revids', revisionString );
 
-		url.search = params;
+		if ( appState.revisions.length > 0 ) {
+			revisionString = appState.revisions.join( '|' );
+			params.append( 'revids', revisionString );
+		}
+
+		// FIXME: I don't think we can request multiple types of model info in
+		// one request.
+		if ( appState.includeModelInfo === true ) {
+			modelInfo.push( 'statistics' );
+		}
+		if ( appState.includeThresholdInfo === true ) {
+			modelInfo.push( 'statistics.thresholds' );
+		}
+		if ( modelInfo.length > 0 ) {
+			params.append( 'model_info', modelInfo.join( '|' ) );
+		}
 
 		// TODO: "|" gets url-encoded but it would be clearer if we didn't.
+		url.search = params;
 		appState.scoringRequest = url.toString();
 
 		fetch( appState.scoringRequest )
@@ -150,6 +167,38 @@ class ModelChooser extends React.Component {
 }
 
 @observer
+class ModelInfoChooser extends React.Component {
+	render() {
+		if ( this.props.appState.wiki === null ) {
+			return null;
+		}
+
+		return (
+			<div>
+				<Checkbox
+					label="Include model info"
+					checked={ this.props.appState.includeModelInfo }
+					onToggle={ this.handleToggleModelInfo.bind( this ) } /><br />
+				<Checkbox
+					label="Include threshold info"
+					checked={ this.props.appState.includeThresholdInfo }
+					onToggle={ this.handleToggleThresholdInfo.bind( this ) } />
+			</div>
+		);
+	}
+
+	@action
+	handleToggleModelInfo() {
+		this.props.appState.includeModelInfo = !this.props.appState.includeModelInfo;
+	}
+
+	@action
+	handleToggleThresholdInfo() {
+		this.props.appState.includeThresholdInfo = !this.props.appState.includeThresholdInfo;
+	}
+}
+
+@observer
 class RevisionChooser extends React.Component {
 	render() {
 		if ( !this.props.appState.wiki ) {
@@ -184,17 +233,23 @@ class RevisionChooser extends React.Component {
 @observer
 class SendButton extends React.Component {
 	render() {
-		// TODO: move to isInputValid
+		// TODO: move to isInputValid, explain.
 		if (
 			this.props.appState.wiki === null ||
-			this.props.appState.revisions.length === 0
+			( this.props.appState.revisions.length === 0 &&
+				!this.props.appState.includeModelInfo &&
+				!this.props.appState.includeThresholdInfo )
 		) {
 			return null;
 		}
 
-		return <Button
-			onClick={ this.handleClick.bind( this ) }
-			label="Give me results!" />;
+		return (
+			<div>
+				<Button
+					onClick={ this.handleClick.bind( this ) }
+					label="Give me results!" />
+			</div>
+		);
 	}
 
 	@action
@@ -248,6 +303,7 @@ render(
 		<WikiChooser appState={appState} />
 		<ModelChooser appState={appState} />
 		<RevisionChooser appState={appState} />
+		<ModelInfoChooser appState={appState} />
 		<SendButton appState={appState} />
 		<RawRequest appState={appState} />
 		<RawResults appState={appState} />

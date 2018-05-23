@@ -346,7 +346,7 @@ class RenderedResults extends React.Component {
 					stats = models[ model ].statistics,
 					thresholds = models[ model ].statistics.thresholds;
 
-				if ( stats !== undefined ) {
+				if ( stats.counts !== undefined ) {
 					infoGraphs.push(
 						<ConfusionMatrix
 							wiki={ this.props.appState.wiki }

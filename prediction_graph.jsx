@@ -9,7 +9,9 @@ class PredictionGraph extends Component {
 				datasets: [
 					{
 						label: 'Revision ' + this.props.rev_id,
-						data: Object.values( this.props.score.probability )
+						data: Object.values( this.props.score.probability ),
+						// TODO: pallete
+						backgroundColor: 'rgb(50, 50, 50)'
 					},
 				]
 			};

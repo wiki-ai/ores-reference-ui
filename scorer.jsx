@@ -16,10 +16,6 @@ import OptionsHelper from './options_helper.jsx';
 import PredictionGraph from './prediction_graph.jsx';
 import ThresholdGraph from './threshold_graph.jsx';
 
-// TODO: configurable
-const oresUri = 'https://ores.wikimedia.org';
-// const oresUri = "http://localhost:5000";
-
 var appState = observable( {
 	// Current UI input values.
 	wiki: null,
@@ -43,6 +39,8 @@ var appState = observable( {
 	},
 
 	// ORES request and results.
+	// TODO: Make this default configurable.
+	oresServer: 'https://ores.wikimedia.org',
 	scoringRequest: null,
 	scoringResponse: null,
 	loading: false
@@ -52,7 +50,7 @@ class OresApi {
 	// TODO: decouple from appState
 
 	static loadWikisAndModels() {
-		fetch( oresUri + '/v3/scores/' )
+		fetch( appState.oresServer + '/v3/scores/' )
 			.then( res => res.json() )
 			.then( action( json => {
 				appState.allModels = json;
@@ -62,7 +60,7 @@ class OresApi {
 
 	@action
 	static requestScores() {
-		let url = new URL( oresUri + '/v3/scores/' + appState.wiki + '/' ),
+		let url = new URL( appState.oresServer + '/v3/scores/' + appState.wiki + '/' ),
 			params = new URLSearchParams(),
 			modelInfo = [],
 			modelString,
@@ -101,6 +99,29 @@ class OresApi {
 				appState.scoringResponse = json;
 				appState.loading = false;
 			} ) );
+	}
+}
+
+@observer
+class ServerChooser extends React.Component {
+	render() {
+		return (
+			<div>
+				<h5>ORES server URI</h5>
+				<Input
+					onInput={ this.handleChange.bind( this ) }
+					defaultValue={ this.props.appState.oresServer }
+				/>
+			</div>
+		);
+	}
+
+	@action
+	handleChange( event ) {
+		this.props.appState.oresServer = event.target.value;
+
+		// TODO: Observe instead.
+		OresApi.loadWikisAndModels();
 	}
 }
 
@@ -371,14 +392,15 @@ OresApi.loadWikisAndModels();
 
 render(
 	<div>
-		<WikiChooser appState={appState} />
-		<ModelChooser appState={appState} />
-		<RevisionChooser appState={appState} />
-		<ModelInfoChooser appState={appState} />
-		<SendButton appState={appState} />
-		<RawRequest appState={appState} />
-		<RawResults appState={appState} />
-		<RenderedResults appState={appState} />
+		<ServerChooser appState={ appState } />
+		<WikiChooser appState={ appState } />
+		<ModelChooser appState={ appState } />
+		<RevisionChooser appState={ appState } />
+		<ModelInfoChooser appState={ appState } />
+		<SendButton appState={ appState } />
+		<RawRequest appState={ appState } />
+		<RawResults appState={ appState } />
+		<RenderedResults appState={ appState } />
 	</div>,
 	document.getElementById( 'root' )
 );

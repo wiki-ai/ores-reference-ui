@@ -32,7 +32,7 @@ class ConfusionMatrix extends Component {
 							// label: actual + ' -> ~' + predicted,
 
 							return cellColor;
-						} ).reverse();
+						} );
 
 					return {
 						label: actual,
@@ -42,28 +42,31 @@ class ConfusionMatrix extends Component {
 					};
 				} ),
 			data = {
-				labels: Object.keys( this.props.counts.labels ),
+				labels: Object.keys( this.props.counts.labels ).map( label => { return '~' + label; } ),
 				datasets: cells
 			};
 
 		/* eslint-disable no-new */
 		new Chart( chartCanvas, {
-			type: 'bar',
+			type: 'horizontalBar',
 			data: data,
 			options: {
 				title: {
 					display: true,
 					text: 'Confusion matrix for ' + this.props.wiki + ' ' + this.props.model + ' model'
 				},
+				legend: {
+					display: false
+				},
 				scales: {
 					xAxes: [ {
+						// TODO: until we can display categories on the x-axis
+						display: false
+					} ],
+					yAxes: [ {
 						stacked: true,
 						barPercentage: 1.0,
 						categoryPercentage: 1.0
-					} ],
-					// TODO: ~predicted labels
-					yAxes: [ {
-						stacked: true
 					} ]
 				}
 			}

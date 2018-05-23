@@ -12,6 +12,7 @@ import 'rc-collapse/assets/index.css';
 import { action, observable, toJS } from 'mobx';
 import { observer } from 'mobx-react';
 
+import ConfusionMatrix from './confusion_matrix.jsx';
 import OptionsHelper from './options_helper.jsx';
 import PredictionGraph from './prediction_graph.jsx';
 import ThresholdGraph from './threshold_graph.jsx';
@@ -336,15 +337,27 @@ class RenderedResults extends React.Component {
 
 		let wikiResponse = this.props.appState.scoringResponse[ this.props.appState.wiki ],
 			scoresResponse = wikiResponse.scores,
+			scoreGraphs = null,
 			models = wikiResponse.models,
-			thresholdGraphs = Object.keys( toJS( models ) )
-				.filter( model => {
-					return Boolean( models[ model ].statistics ) &&
-						Boolean( models[ model ].statistics.thresholds );
-				} ).map( model => {
-					let thresholds = models[ model ].statistics.thresholds;
+			modelInfos = Object.keys( toJS( models ) ).filter( model => {
+				return models[ model ].statistics !== undefined;
+			} ).map( model => {
+				let infoGraphs = [],
+					stats = models[ model ].statistics,
+					thresholds = models[ model ].statistics.thresholds;
 
-					return Object.keys( thresholds ).map( target => {
+				if ( stats !== undefined ) {
+					infoGraphs.push(
+						<ConfusionMatrix
+							wiki={ this.props.appState.wiki }
+							model={ model }
+							counts={ stats.counts }
+						/>
+					);
+				}
+
+				if ( thresholds !== undefined ) {
+					infoGraphs = infoGraphs.concat( Object.keys( thresholds ).map( target => {
 						return (
 							<ThresholdGraph
 								key={ model + '-' + target }
@@ -354,9 +367,11 @@ class RenderedResults extends React.Component {
 								target={ target }
 							/>
 						);
-					} );
-				} ),
-			scoreGraphs = null;
+					} ) );
+				}
+
+				return infoGraphs;
+			} );
 
 		if ( scoresResponse ) {
 			scoreGraphs = Object.keys( scoresResponse ).map( rev_id => {
@@ -382,7 +397,7 @@ class RenderedResults extends React.Component {
 		return (
 			<div>
 				{ scoreGraphs }
-				{ thresholdGraphs }
+				{ modelInfos }
 			</div>
 		);
 	}

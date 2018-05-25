@@ -1,3 +1,6 @@
+import config from './config.jsx';
+import './styles.css';
+
 import React from 'react';
 import { render } from 'react-dom';
 
@@ -40,8 +43,7 @@ var appState = observable( {
 	},
 
 	// ORES request and results.
-	// TODO: Make this default configurable.
-	oresServer: 'https://ores.wikimedia.org',
+	oresServer: config.defaultOresServer,
 	scoringRequest: null,
 	scoringResponse: null,
 	loading: false

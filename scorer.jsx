@@ -207,7 +207,7 @@ class ModelInfoChooser extends React.Component {
 					label="Graph threshold statistics"
 					checked={ this.props.appState.includeThresholdInfo }
 					onToggle={ this.handleToggleThresholdInfo.bind( this ) }
-				/>
+				/><br />
 			</div>
 		);
 	}
@@ -334,7 +334,9 @@ class RenderedResults extends React.Component {
 			!this.props.appState.scoringResponse ||
 			!this.props.appState.scoringResponse[ this.props.appState.wiki ]
 		) {
-			return null;
+			// FIXME: hack to allow scrolling and make it obvious that the
+			// invisible buttons are in fact not there.
+			return <div style={{ height: "400px" }}></div>;
 		}
 
 		let wikiResponse = this.props.appState.scoringResponse[ this.props.appState.wiki ],
